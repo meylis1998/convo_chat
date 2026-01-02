@@ -5,8 +5,9 @@ import '../../features/auth/presentation/bloc/auth_bloc.dart';
 import '../../features/auth/presentation/pages/forgot_password_page.dart';
 import '../../features/auth/presentation/pages/login_page.dart';
 import '../../features/auth/presentation/pages/register_page.dart';
-import '../../features/conversations/presentation/pages/conversations_page.dart';
 import '../../features/chat/presentation/pages/chat_page.dart';
+import '../../features/conversations/presentation/pages/conversations_page.dart';
+import '../../features/search/presentation/pages/search_page.dart';
 
 class AppRouter {
   final AuthBloc authBloc;
@@ -64,6 +65,11 @@ class AppRouter {
               final conversationId = state.pathParameters['conversationId']!;
               return ChatPage(conversationId: conversationId);
             },
+          ),
+          GoRoute(
+            path: 'search',
+            name: 'search',
+            builder: (context, state) => const SearchPage(),
           ),
         ],
       ),

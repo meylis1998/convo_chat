@@ -42,6 +42,7 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
     on<ClearReplyTo>(_onClearReplyTo);
     on<UpdateTypingStatus>(_onUpdateTypingStatus);
     on<MarkMessagesAsRead>(_onMarkMessagesAsRead);
+    on<StopWatchingChat>(_onStopWatchingChat);
   }
 
   void _onLoadChat(LoadChat event, Emitter<ChatState> emit) {
@@ -343,6 +344,16 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
         );
       }
     }
+  }
+
+  void _onStopWatchingChat(
+    StopWatchingChat event,
+    Emitter<ChatState> emit,
+  ) {
+    _messagesSubscription?.cancel();
+    _messagesSubscription = null;
+    _conversationSubscription?.cancel();
+    _conversationSubscription = null;
   }
 
   @override

@@ -95,9 +95,7 @@ class _ConversationsViewState extends State<_ConversationsView> {
       actions: [
         IconButton(
           icon: const Icon(Icons.search),
-          onPressed: () {
-            // TODO: Implement search
-          },
+          onPressed: () => context.go('/search'),
         ),
       ],
     );
@@ -306,6 +304,8 @@ class _ConversationsViewState extends State<_ConversationsView> {
               title: Text('Sign Out', style: TextStyle(color: AppColors.error)),
               onTap: () {
                 Navigator.pop(ctx);
+                // Cancel Firestore listeners before signing out to avoid permission errors
+                context.read<ConversationsBloc>().add(const StopWatchingConversations());
                 context.read<AuthBloc>().add(const SignOutRequested());
               },
             ),

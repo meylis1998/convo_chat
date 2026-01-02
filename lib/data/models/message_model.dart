@@ -66,9 +66,14 @@ class MessageModel extends MessageEntity {
   static Map<String, DateTime> _parseTimestampMap(dynamic data) {
     if (data == null) return {};
     final map = data as Map<String, dynamic>;
-    return map.map(
-      (key, value) => MapEntry(key, (value as Timestamp).toDate()),
-    );
+    final result = <String, DateTime>{};
+    for (final entry in map.entries) {
+      final timestamp = entry.value as Timestamp?;
+      if (timestamp != null) {
+        result[entry.key] = timestamp.toDate();
+      }
+    }
+    return result;
   }
 
   Map<String, dynamic> toFirestore() {

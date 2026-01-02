@@ -25,6 +25,7 @@ class ConversationsBloc extends Bloc<ConversationsEvent, ConversationsState> {
     on<CreateDirectConversation>(_onCreateDirectConversation);
     on<CreateGroupConversation>(_onCreateGroupConversation);
     on<DeleteConversation>(_onDeleteConversation);
+    on<StopWatchingConversations>(_onStopWatchingConversations);
   }
 
   void _onLoadConversations(
@@ -163,6 +164,14 @@ class ConversationsBloc extends Bloc<ConversationsEvent, ConversationsState> {
         errorMessage: e.toString(),
       ));
     }
+  }
+
+  void _onStopWatchingConversations(
+    StopWatchingConversations event,
+    Emitter<ConversationsState> emit,
+  ) {
+    _conversationsSubscription?.cancel();
+    _conversationsSubscription = null;
   }
 
   @override

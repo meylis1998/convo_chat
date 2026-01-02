@@ -59,6 +59,8 @@ class _ChatViewState extends State<_ChatView> {
 
   @override
   void dispose() {
+    // Cancel Firestore listeners to avoid permission errors if user logs out
+    context.read<ChatBloc>().add(const StopWatchingChat());
     _messageController.dispose();
     _scrollController.dispose();
     _focusNode.dispose();

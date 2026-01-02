@@ -72,3 +72,7 @@ class DeleteConversation extends ConversationsEvent {
   @override
   List<Object?> get props => [conversationId];
 }
+
+class StopWatchingConversations extends ConversationsEvent {
+  const StopWatchingConversations();
+}

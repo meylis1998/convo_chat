@@ -55,12 +55,14 @@ class ConversationModel extends ConversationEntity {
   static Map<String, DateTime> _parseTypingUsers(dynamic data) {
     if (data == null) return {};
     final map = data as Map<String, dynamic>;
-    return map.map(
-      (key, value) => MapEntry(
-        key,
-        (value as Timestamp).toDate(),
-      ),
-    );
+    final result = <String, DateTime>{};
+    for (final entry in map.entries) {
+      final value = entry.value;
+      if (value != null && value is Timestamp) {
+        result[entry.key] = value.toDate();
+      }
+    }
+    return result;
   }
 
   static Map<String, int> _parseUnreadCounts(dynamic data) {

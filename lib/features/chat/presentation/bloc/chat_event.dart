@@ -142,3 +142,7 @@ class UpdateTypingStatus extends ChatEvent {
 class MarkMessagesAsRead extends ChatEvent {
   const MarkMessagesAsRead();
 }
+
+class StopWatchingChat extends ChatEvent {
+  const StopWatchingChat();
+}
