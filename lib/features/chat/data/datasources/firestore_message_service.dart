@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:injectable/injectable.dart';
 
+import '../../../../core/entities/entities.dart';
 import '../../../../core/errors/exceptions.dart';
 import '../../../../core/utils/logger.dart';
 import '../models/message_model.dart';
@@ -71,8 +72,9 @@ class FirestoreMessageService {
   Future<String> sendMessage(MessageModel message) async {
     try {
       AppLogger.firebase('Sending message to ${message.conversationId}');
-      final docRef =
-          await _messagesRef(message.conversationId).add(message.toFirestore());
+      final data = message.toFirestore();
+      data['status'] = MessageStatus.sent.name;
+      final docRef = await _messagesRef(message.conversationId).add(data);
       AppLogger.firebase('Message sent: ${docRef.id}');
       return docRef.id;
     } on FirebaseException catch (e) {
