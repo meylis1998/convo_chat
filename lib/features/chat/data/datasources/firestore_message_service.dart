@@ -170,6 +170,28 @@ class FirestoreMessageService {
     }
   }
 
+  Future<void> markMultipleAsRead(
+    String conversationId,
+    List<String> messageIds,
+    String userId,
+  ) async {
+    if (messageIds.isEmpty) return;
+
+    try {
+      final batch = _firestore.batch();
+      for (final messageId in messageIds) {
+        final docRef = _messagesRef(conversationId).doc(messageId);
+        batch.update(docRef, {
+          'readBy.$userId': FieldValue.serverTimestamp(),
+          'status': 'read',
+        });
+      }
+      await batch.commit();
+    } on FirebaseException catch (e) {
+      AppLogger.error('Failed to mark messages as read', error: e);
+    }
+  }
+
   Future<void> markAsDelivered(
     String conversationId,
     String messageId,

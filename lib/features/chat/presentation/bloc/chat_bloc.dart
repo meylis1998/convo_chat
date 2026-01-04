@@ -122,6 +122,12 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
     try {
       final messageId = await _messageService.sendMessage(messageModel);
 
+      // Remove optimistic message - the real one will come from Firestore stream
+      final updatedMessages = state.messages
+          .where((m) => m.id != tempId)
+          .toList();
+      emit(state.copyWith(messages: updatedMessages));
+
       // Update last message in conversation
       await _conversationService.updateLastMessage(
         state.conversationId!,
@@ -187,6 +193,12 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
 
     try {
       final messageId = await _messageService.sendMessage(messageModel);
+
+      // Remove optimistic message - the real one will come from Firestore stream
+      final updatedMessages = state.messages
+          .where((m) => m.id != tempId)
+          .toList();
+      emit(state.copyWith(messages: updatedMessages));
 
       // Update last message
       await _conversationService.updateLastMessage(
@@ -308,16 +320,20 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
 
     _typingTimer?.cancel();
 
-    await _conversationService.setTypingStatus(
-      state.conversationId!,
-      state.currentUser!.uid,
-      event.isTyping,
-    );
+    try {
+      await _conversationService.setTypingStatus(
+        state.conversationId!,
+        state.currentUser!.uid,
+        event.isTyping,
+      );
 
-    if (event.isTyping) {
-      _typingTimer = Timer(const Duration(seconds: 3), () {
-        add(const UpdateTypingStatus(false));
-      });
+      if (event.isTyping) {
+        _typingTimer = Timer(const Duration(seconds: 3), () {
+          add(const UpdateTypingStatus(false));
+        });
+      }
+    } catch (e) {
+      // Silently fail for typing status - non-critical feature
     }
   }
 
@@ -333,16 +349,20 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
       state.currentUser!.uid,
     );
 
-    // Mark individual messages as read
-    for (final message in state.messages) {
-      if (message.senderId != state.currentUser!.uid &&
-          !message.readBy.containsKey(state.currentUser!.uid)) {
-        await _messageService.markAsRead(
-          state.conversationId!,
-          message.id,
-          state.currentUser!.uid,
-        );
-      }
+    // Collect unread message IDs and mark them all in a single batch
+    final unreadMessageIds = state.messages
+        .where((m) =>
+            m.senderId != state.currentUser!.uid &&
+            !m.readBy.containsKey(state.currentUser!.uid))
+        .map((m) => m.id)
+        .toList();
+
+    if (unreadMessageIds.isNotEmpty) {
+      await _messageService.markMultipleAsRead(
+        state.conversationId!,
+        unreadMessageIds,
+        state.currentUser!.uid,
+      );
     }
   }
 

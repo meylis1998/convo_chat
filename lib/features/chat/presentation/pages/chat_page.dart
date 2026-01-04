@@ -40,10 +40,13 @@ class _ChatViewState extends State<_ChatView> {
   final _messageController = TextEditingController();
   final _scrollController = ScrollController();
   final _focusNode = FocusNode();
+  bool _hasMarkedAsRead = false;
+  late final ChatBloc _chatBloc;
 
   @override
   void initState() {
     super.initState();
+    _chatBloc = context.read<ChatBloc>();
     _loadChat();
   }
 
@@ -59,6 +62,9 @@ class _ChatViewState extends State<_ChatView> {
 
   @override
   void dispose() {
+    // Clear typing status and stop watching before disposing
+    _chatBloc.add(const UpdateTypingStatus(false));
+    _chatBloc.add(const StopWatchingChat());
     _messageController.dispose();
     _scrollController.dispose();
     _focusNode.dispose();
@@ -149,6 +155,8 @@ class _ChatViewState extends State<_ChatView> {
 
   void _showReactionPicker(MessageEntity message) {
     final reactions = ['👍', '❤️', '😂', '😮', '😢', '😡'];
+    final currentUser = context.read<AuthBloc>().state.user;
+
     showModalBottomSheet(
       context: context,
       builder: (ctx) => SafeArea(
@@ -157,15 +165,35 @@ class _ChatViewState extends State<_ChatView> {
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: reactions.map((emoji) {
+              final hasReacted = message.reactions[emoji]
+                      ?.contains(currentUser?.uid) ??
+                  false;
+
               return GestureDetector(
                 onTap: () {
                   Navigator.pop(ctx);
-                  context.read<ChatBloc>().add(AddReaction(
-                        messageId: message.id,
-                        emoji: emoji,
-                      ));
+                  if (hasReacted) {
+                    context.read<ChatBloc>().add(RemoveReaction(
+                          messageId: message.id,
+                          emoji: emoji,
+                        ));
+                  } else {
+                    context.read<ChatBloc>().add(AddReaction(
+                          messageId: message.id,
+                          emoji: emoji,
+                        ));
+                  }
                 },
-                child: Text(emoji, style: const TextStyle(fontSize: 32)),
+                child: Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: hasReacted
+                      ? BoxDecoration(
+                          color: AppColors.primary.withValues(alpha: 0.2),
+                          borderRadius: BorderRadius.circular(8),
+                        )
+                      : null,
+                  child: Text(emoji, style: const TextStyle(fontSize: 32)),
+                ),
               );
             }).toList(),
           ),
@@ -195,10 +223,14 @@ class _ChatViewState extends State<_ChatView> {
           ),
           TextButton(
             onPressed: () {
+              final newText = controller.text.trim();
+              if (newText.isEmpty) {
+                return;
+              }
               Navigator.pop(ctx);
               context.read<ChatBloc>().add(EditMessage(
                     messageId: message.id,
-                    newText: controller.text.trim(),
+                    newText: newText,
                   ));
             },
             child: const Text('Save'),
@@ -240,7 +272,10 @@ class _ChatViewState extends State<_ChatView> {
           if (state.errorMessage != null) {
             context.showErrorSnackBar(state.errorMessage!);
           }
-          if (state.status == ChatStatus.loaded && state.messages.isNotEmpty) {
+          if (state.status == ChatStatus.loaded &&
+              state.messages.isNotEmpty &&
+              !_hasMarkedAsRead) {
+            _hasMarkedAsRead = true;
             context.read<ChatBloc>().add(const MarkMessagesAsRead());
           }
         },
