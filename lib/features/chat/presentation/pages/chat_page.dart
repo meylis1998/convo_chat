@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
@@ -49,6 +51,7 @@ class _ChatViewState extends State<_ChatView> {
   bool _showNewMessageButton = false;
   int _previousMessageCount = 0;
   late final ChatBloc _chatBloc;
+  Timer? _lastSeenRefreshTimer;
 
   @override
   void initState() {
@@ -56,6 +59,14 @@ class _ChatViewState extends State<_ChatView> {
     _chatBloc = context.read<ChatBloc>();
     _scrollController.addListener(_onScroll);
     _loadChat();
+    _startLastSeenRefreshTimer();
+  }
+
+  void _startLastSeenRefreshTimer() {
+    _lastSeenRefreshTimer = Timer.periodic(
+      const Duration(seconds: 30),
+      (_) => setState(() {}),
+    );
   }
 
   bool get _isNearBottom {
@@ -90,6 +101,7 @@ class _ChatViewState extends State<_ChatView> {
 
   @override
   void dispose() {
+    _lastSeenRefreshTimer?.cancel();
     // Clear typing status and stop watching before disposing
     _chatBloc.add(const UpdateTypingStatus(false));
     _chatBloc.add(const StopWatchingChat());

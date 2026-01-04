@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
@@ -33,10 +35,26 @@ class _ConversationsView extends StatefulWidget {
 }
 
 class _ConversationsViewState extends State<_ConversationsView> {
+  Timer? _lastSeenRefreshTimer;
+
   @override
   void initState() {
     super.initState();
     _loadConversations();
+    _startLastSeenRefreshTimer();
+  }
+
+  @override
+  void dispose() {
+    _lastSeenRefreshTimer?.cancel();
+    super.dispose();
+  }
+
+  void _startLastSeenRefreshTimer() {
+    _lastSeenRefreshTimer = Timer.periodic(
+      const Duration(seconds: 30),
+      (_) => setState(() {}),
+    );
   }
 
   void _loadConversations() {
