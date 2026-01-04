@@ -38,6 +38,7 @@ upload-keystore.jks
 /android/app/google-services.json
 ios/Runner/GoogleService-Info.plist
 lib/firebase_options.dart
+run_dev.sh
 
 # Symbolication related
 app.*.symbols
