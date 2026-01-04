@@ -116,7 +116,7 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
     // Optimistic update with entity
     emit(state.copyWith(
       messages: [messageModel.toEntity(), ...state.messages],
-      replyTo: null,
+      clearReplyTo: true,
     ));
 
     try {
@@ -188,7 +188,7 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
     // Optimistic update with entity
     emit(state.copyWith(
       messages: [messageModel.toEntity(), ...state.messages],
-      replyTo: null,
+      clearReplyTo: true,
     ));
 
     try {
