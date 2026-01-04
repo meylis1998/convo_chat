@@ -4,10 +4,9 @@ import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:injectable/injectable.dart';
 
-import '../../../../data/datasources/remote/firestore_conversation_service.dart';
-import '../../../../data/models/conversation_model.dart';
-import '../../../../domain/entities/conversation_entity.dart';
-import '../../../../domain/entities/user_entity.dart';
+import '../../data/datasources/firestore_conversation_service.dart';
+import '../../data/models/conversation_model.dart';
+import '../../../../core/entities/entities.dart';
 
 part 'conversations_event.dart';
 part 'conversations_state.dart';
@@ -37,7 +36,9 @@ class ConversationsBloc extends Bloc<ConversationsEvent, ConversationsState> {
     _conversationsSubscription?.cancel();
     _conversationsSubscription =
         _conversationService.watchConversations(event.userId).listen(
-              (conversations) => add(ConversationsUpdated(conversations)),
+              (conversations) => add(ConversationsUpdated(
+                conversations.map((c) => c.toEntity()).toList(),
+              )),
               onError: (error) => add(ConversationsError(error.toString())),
             );
   }
@@ -84,11 +85,11 @@ class ConversationsBloc extends Bloc<ConversationsEvent, ConversationsState> {
         type: ConversationType.direct,
         participantIds: [event.currentUser.uid, event.otherUser.uid],
         participantDetails: {
-          event.currentUser.uid: ParticipantInfo(
+          event.currentUser.uid: ParticipantInfoModel(
             displayName: event.currentUser.displayName,
             photoUrl: event.currentUser.photoUrl,
           ),
-          event.otherUser.uid: ParticipantInfo(
+          event.otherUser.uid: ParticipantInfoModel(
             displayName: event.otherUser.displayName,
             photoUrl: event.otherUser.photoUrl,
           ),
@@ -115,14 +116,14 @@ class ConversationsBloc extends Bloc<ConversationsEvent, ConversationsState> {
       final participantIds = event.members.map((u) => u.uid).toList()
         ..add(event.currentUser.uid);
 
-      final participantDetails = <String, ParticipantInfo>{};
+      final participantDetails = <String, ParticipantInfoModel>{};
       for (final member in event.members) {
-        participantDetails[member.uid] = ParticipantInfo(
+        participantDetails[member.uid] = ParticipantInfoModel(
           displayName: member.displayName,
           photoUrl: member.photoUrl,
         );
       }
-      participantDetails[event.currentUser.uid] = ParticipantInfo(
+      participantDetails[event.currentUser.uid] = ParticipantInfoModel(
         displayName: event.currentUser.displayName,
         photoUrl: event.currentUser.photoUrl,
       );
@@ -134,7 +135,7 @@ class ConversationsBloc extends Bloc<ConversationsEvent, ConversationsState> {
         participantDetails: participantDetails,
         createdAt: DateTime.now(),
         updatedAt: DateTime.now(),
-        metadata: GroupMetadata(
+        metadata: GroupMetadataModel(
           name: event.name,
           description: event.description,
           adminIds: [event.currentUser.uid],

@@ -3,8 +3,8 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../core/core.dart';
-import '../../../../presentation/theme/app_colors.dart';
-import '../../../../presentation/widgets/loading_indicator.dart';
+import '../../../../core/theme/app_colors.dart';
+import '../../../../core/widgets/loading_indicator.dart';
 import '../bloc/auth_bloc.dart';
 
 class ForgotPasswordPage extends StatefulWidget {

@@ -18,20 +18,24 @@ import 'package:injectable/injectable.dart' as _i526;
 import 'package:just_audio/just_audio.dart' as _i501;
 import 'package:record/record.dart' as _i1039;
 
-import '../../data/datasources/remote/firebase_auth_service.dart' as _i6;
-import '../../data/datasources/remote/firestore_conversation_service.dart'
-    as _i291;
-import '../../data/datasources/remote/firestore_message_service.dart' as _i100;
-import '../../data/datasources/remote/firestore_user_service.dart' as _i407;
-import '../../data/repositories/auth_repository_impl.dart' as _i895;
-import '../../domain/repositories/auth_repository.dart' as _i1073;
+import '../../features/auth/data/datasources/firebase_auth_service.dart'
+    as _i607;
+import '../../features/auth/data/datasources/firestore_user_service.dart'
+    as _i488;
+import '../../features/auth/data/repositories/auth_repository_impl.dart'
+    as _i153;
+import '../../features/auth/domain/repositories/auth_repository.dart' as _i787;
 import '../../features/auth/presentation/bloc/auth_bloc.dart' as _i797;
+import '../../features/chat/data/datasources/firestore_message_service.dart'
+    as _i868;
 import '../../features/chat/presentation/bloc/chat_bloc.dart' as _i65;
+import '../../features/conversations/data/datasources/firestore_conversation_service.dart'
+    as _i49;
 import '../../features/conversations/presentation/bloc/conversations_bloc.dart'
     as _i794;
 import '../../features/search/presentation/bloc/search_bloc.dart' as _i552;
-import '../../services/media_service.dart' as _i454;
-import '../../services/voice_service.dart' as _i365;
+import '../services/media_service.dart' as _i586;
+import '../services/voice_service.dart' as _i950;
 import 'register_module.dart' as _i291;
 
 extension GetItInjectableX on _i174.GetIt {
@@ -52,59 +56,59 @@ extension GetItInjectableX on _i174.GetIt {
     gh.lazySingleton<_i183.ImagePicker>(() => registerModule.imagePicker);
     gh.lazySingleton<_i1039.AudioRecorder>(() => registerModule.audioRecorder);
     gh.lazySingleton<_i501.AudioPlayer>(() => registerModule.audioPlayer);
-    gh.lazySingleton<_i291.FirestoreConversationService>(
-      () => _i291.FirestoreConversationService(
-        firestore: gh<_i974.FirebaseFirestore>(),
-      ),
-    );
-    gh.lazySingleton<_i100.FirestoreMessageService>(
-      () => _i100.FirestoreMessageService(
-        firestore: gh<_i974.FirebaseFirestore>(),
-      ),
-    );
-    gh.lazySingleton<_i407.FirestoreUserService>(
+    gh.lazySingleton<_i488.FirestoreUserService>(
       () =>
-          _i407.FirestoreUserService(firestore: gh<_i974.FirebaseFirestore>()),
+          _i488.FirestoreUserService(firestore: gh<_i974.FirebaseFirestore>()),
     );
-    gh.factory<_i794.ConversationsBloc>(
-      () => _i794.ConversationsBloc(gh<_i291.FirestoreConversationService>()),
+    gh.lazySingleton<_i868.FirestoreMessageService>(
+      () => _i868.FirestoreMessageService(
+        firestore: gh<_i974.FirebaseFirestore>(),
+      ),
     );
-    gh.lazySingleton<_i365.VoiceService>(
-      () => _i365.VoiceService(
+    gh.lazySingleton<_i49.FirestoreConversationService>(
+      () => _i49.FirestoreConversationService(
+        firestore: gh<_i974.FirebaseFirestore>(),
+      ),
+    );
+    gh.lazySingleton<_i950.VoiceService>(
+      () => _i950.VoiceService(
         recorder: gh<_i1039.AudioRecorder>(),
         player: gh<_i501.AudioPlayer>(),
       ),
     );
-    gh.lazySingleton<_i6.FirebaseAuthService>(
-      () => _i6.FirebaseAuthService(firebaseAuth: gh<_i59.FirebaseAuth>()),
+    gh.lazySingleton<_i607.FirebaseAuthService>(
+      () => _i607.FirebaseAuthService(firebaseAuth: gh<_i59.FirebaseAuth>()),
     );
-    gh.factory<_i552.SearchBloc>(
-      () => _i552.SearchBloc(
-        gh<_i407.FirestoreUserService>(),
-        gh<_i100.FirestoreMessageService>(),
-        gh<_i291.FirestoreConversationService>(),
-      ),
+    gh.factory<_i794.ConversationsBloc>(
+      () => _i794.ConversationsBloc(gh<_i49.FirestoreConversationService>()),
     );
-    gh.factory<_i65.ChatBloc>(
-      () => _i65.ChatBloc(
-        gh<_i100.FirestoreMessageService>(),
-        gh<_i291.FirestoreConversationService>(),
-      ),
-    );
-    gh.lazySingleton<_i454.MediaService>(
-      () => _i454.MediaService(
-        storage: gh<_i457.FirebaseStorage>(),
-        imagePicker: gh<_i183.ImagePicker>(),
-      ),
-    );
-    gh.lazySingleton<_i1073.AuthRepository>(
-      () => _i895.AuthRepositoryImpl(
-        gh<_i6.FirebaseAuthService>(),
-        gh<_i407.FirestoreUserService>(),
+    gh.lazySingleton<_i787.AuthRepository>(
+      () => _i153.AuthRepositoryImpl(
+        gh<_i607.FirebaseAuthService>(),
+        gh<_i488.FirestoreUserService>(),
       ),
     );
     gh.factory<_i797.AuthBloc>(
-      () => _i797.AuthBloc(gh<_i1073.AuthRepository>()),
+      () => _i797.AuthBloc(gh<_i787.AuthRepository>()),
+    );
+    gh.factory<_i65.ChatBloc>(
+      () => _i65.ChatBloc(
+        gh<_i868.FirestoreMessageService>(),
+        gh<_i49.FirestoreConversationService>(),
+      ),
+    );
+    gh.factory<_i552.SearchBloc>(
+      () => _i552.SearchBloc(
+        gh<_i488.FirestoreUserService>(),
+        gh<_i868.FirestoreMessageService>(),
+        gh<_i49.FirestoreConversationService>(),
+      ),
+    );
+    gh.lazySingleton<_i586.MediaService>(
+      () => _i586.MediaService(
+        storage: gh<_i457.FirebaseStorage>(),
+        imagePicker: gh<_i183.ImagePicker>(),
+      ),
     );
     return this;
   }

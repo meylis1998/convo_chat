@@ -4,12 +4,12 @@ import 'package:go_router/go_router.dart';
 
 import '../../../../core/di/injection.dart';
 import '../../../../core/extensions/context_extensions.dart';
-import '../../../../domain/entities/message_entity.dart';
-import '../../../../presentation/theme/app_colors.dart';
-import '../../../../presentation/widgets/loading_indicator.dart';
-import '../../../../presentation/widgets/message_bubble.dart';
-import '../../../../presentation/widgets/message_input.dart';
-import '../../../../presentation/widgets/user_avatar.dart';
+import '../../../../core/entities/entities.dart';
+import '../../../../core/theme/app_colors.dart';
+import '../../../../core/widgets/loading_indicator.dart';
+import '../../../../core/widgets/message_bubble.dart';
+import '../../../../core/widgets/message_input.dart';
+import '../../../../core/widgets/user_avatar.dart';
 import '../../../auth/presentation/bloc/auth_bloc.dart';
 import '../bloc/chat_bloc.dart';
 

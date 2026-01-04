@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 
-import '../../../../domain/entities/user_entity.dart';
-import '../../../../presentation/theme/app_colors.dart';
-import '../../../../presentation/widgets/user_avatar.dart';
+import '../../../../core/entities/user_entity.dart';
+import '../../../../core/theme/app_colors.dart';
+import '../../../../core/widgets/user_avatar.dart';
 
 class SearchUserTile extends StatelessWidget {
   final UserEntity user;

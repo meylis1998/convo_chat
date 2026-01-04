@@ -4,9 +4,9 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'core/di/injection.dart';
 import 'core/errors/failures.dart';
 import 'features/auth/presentation/bloc/auth_bloc.dart';
-import 'presentation/routes/app_router.dart';
-import 'presentation/theme/app_colors.dart';
-import 'presentation/theme/app_theme.dart';
+import 'core/routes/app_router.dart';
+import 'core/theme/app_colors.dart';
+import 'core/theme/app_theme.dart';
 
 class ConvoApp extends StatefulWidget {
   const ConvoApp({super.key});

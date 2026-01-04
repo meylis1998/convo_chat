@@ -6,8 +6,8 @@ import 'package:injectable/injectable.dart';
 
 import '../../../../core/errors/failures.dart';
 import '../../../../core/utils/logger.dart';
-import '../../../../domain/entities/user_entity.dart';
-import '../../../../domain/repositories/auth_repository.dart';
+import '../../../../core/entities/user_entity.dart';
+import '../../domain/repositories/auth_repository.dart';
 
 part 'auth_event.dart';
 part 'auth_state.dart';

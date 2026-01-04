@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 
 import '../../../../core/extensions/datetime_extensions.dart';
-import '../../../../domain/entities/message_entity.dart';
-import '../../../../presentation/theme/app_colors.dart';
-import '../../../../presentation/widgets/user_avatar.dart';
+import '../../../../core/entities/entities.dart';
+import '../../../../core/theme/app_colors.dart';
+import '../../../../core/widgets/user_avatar.dart';
 import '../bloc/search_bloc.dart';
 
 class SearchMessageTile extends StatelessWidget {

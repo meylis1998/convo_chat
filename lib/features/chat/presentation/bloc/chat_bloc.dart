@@ -5,13 +5,11 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:injectable/injectable.dart';
 import 'package:uuid/uuid.dart';
 
-import '../../../../data/datasources/remote/firestore_conversation_service.dart';
-import '../../../../data/datasources/remote/firestore_message_service.dart';
-import '../../../../data/models/conversation_model.dart';
-import '../../../../data/models/message_model.dart';
-import '../../../../domain/entities/conversation_entity.dart';
-import '../../../../domain/entities/message_entity.dart';
-import '../../../../domain/entities/user_entity.dart';
+import '../../../conversations/data/datasources/firestore_conversation_service.dart';
+import '../../data/datasources/firestore_message_service.dart';
+import '../../../conversations/data/models/conversation_model.dart';
+import '../../data/models/message_model.dart';
+import '../../../../core/entities/entities.dart';
 
 part 'chat_event.dart';
 part 'chat_state.dart';
@@ -57,7 +55,9 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
 
     _messagesSubscription =
         _messageService.watchMessages(event.conversationId).listen(
-              (messages) => add(MessagesUpdated(messages)),
+              (messages) => add(MessagesUpdated(
+                messages.map((m) => m.toEntity()).toList(),
+              )),
               onError: (error) => add(ChatError(error.toString())),
             );
 
@@ -65,7 +65,7 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
         _conversationService.watchConversation(event.conversationId).listen(
               (conversation) {
                 if (conversation != null) {
-                  add(ConversationUpdated(conversation));
+                  add(ConversationUpdated(conversation.toEntity()));
                 }
               },
               onError: (error) => add(ChatError(error.toString())),
@@ -100,27 +100,27 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
     if (state.currentUser == null || state.conversationId == null) return;
 
     final tempId = _uuid.v4();
-    final message = MessageModel(
+    final messageModel = MessageModel(
       id: tempId,
       conversationId: state.conversationId!,
       senderId: state.currentUser!.uid,
       senderName: state.currentUser!.displayName,
       senderPhotoUrl: state.currentUser!.photoUrl,
       type: MessageType.text,
-      content: MessageContent.text(event.text),
-      replyTo: state.replyTo,
+      content: MessageContentModel.forText(event.text),
+      replyTo: state.replyTo != null ? ReplyInfoModel.fromEntity(state.replyTo!) : null,
       createdAt: DateTime.now(),
       status: MessageStatus.sending,
     );
 
-    // Optimistic update
+    // Optimistic update with entity
     emit(state.copyWith(
-      messages: [message, ...state.messages],
+      messages: [messageModel.toEntity(), ...state.messages],
       replyTo: null,
     ));
 
     try {
-      final messageId = await _messageService.sendMessage(message);
+      final messageId = await _messageService.sendMessage(messageModel);
 
       // Update last message in conversation
       await _conversationService.updateLastMessage(
@@ -166,27 +166,27 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
     if (state.currentUser == null || state.conversationId == null) return;
 
     final tempId = _uuid.v4();
-    final message = MessageModel(
+    final messageModel = MessageModel(
       id: tempId,
       conversationId: state.conversationId!,
       senderId: state.currentUser!.uid,
       senderName: state.currentUser!.displayName,
       senderPhotoUrl: state.currentUser!.photoUrl,
       type: event.type,
-      content: event.content,
-      replyTo: state.replyTo,
+      content: MessageContentModel.fromEntity(event.content),
+      replyTo: state.replyTo != null ? ReplyInfoModel.fromEntity(state.replyTo!) : null,
       createdAt: DateTime.now(),
       status: MessageStatus.sending,
     );
 
-    // Optimistic update
+    // Optimistic update with entity
     emit(state.copyWith(
-      messages: [message, ...state.messages],
+      messages: [messageModel.toEntity(), ...state.messages],
       replyTo: null,
     ));
 
     try {
-      final messageId = await _messageService.sendMessage(message);
+      final messageId = await _messageService.sendMessage(messageModel);
 
       // Update last message
       await _conversationService.updateLastMessage(

@@ -4,13 +4,11 @@ import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:injectable/injectable.dart';
 
-import '../../../../data/datasources/remote/firestore_conversation_service.dart';
-import '../../../../data/datasources/remote/firestore_message_service.dart';
-import '../../../../data/datasources/remote/firestore_user_service.dart';
-import '../../../../data/models/conversation_model.dart';
-import '../../../../domain/entities/conversation_entity.dart';
-import '../../../../domain/entities/message_entity.dart';
-import '../../../../domain/entities/user_entity.dart';
+import '../../../conversations/data/datasources/firestore_conversation_service.dart';
+import '../../../chat/data/datasources/firestore_message_service.dart';
+import '../../../auth/data/datasources/firestore_user_service.dart';
+import '../../../conversations/data/models/conversation_model.dart';
+import '../../../../core/entities/entities.dart';
 
 part 'search_event.dart';
 part 'search_state.dart';
@@ -127,11 +125,11 @@ class SearchBloc extends Bloc<SearchEvent, SearchState> {
         type: ConversationType.direct,
         participantIds: [event.currentUser.uid, event.otherUser.uid],
         participantDetails: {
-          event.currentUser.uid: ParticipantInfo(
+          event.currentUser.uid: ParticipantInfoModel(
             displayName: event.currentUser.displayName,
             photoUrl: event.currentUser.photoUrl,
           ),
-          event.otherUser.uid: ParticipantInfo(
+          event.otherUser.uid: ParticipantInfoModel(
             displayName: event.otherUser.displayName,
             photoUrl: event.otherUser.photoUrl,
           ),
