@@ -5,6 +5,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:injectable/injectable.dart';
 
 import '../../../../core/errors/failures.dart';
+import '../../../../core/utils/logger.dart';
 import '../../../../domain/entities/user_entity.dart';
 import '../../../../domain/repositories/auth_repository.dart';
 
@@ -15,6 +16,10 @@ part 'auth_state.dart';
 class AuthBloc extends Bloc<AuthEvent, AuthState> {
   final AuthRepository _authRepository;
   StreamSubscription<UserEntity?>? _authStateSubscription;
+  Timer? _sessionValidationTimer;
+
+  /// Session validation interval (5 minutes)
+  static const _sessionValidationInterval = Duration(minutes: 5);
 
   AuthBloc(this._authRepository) : super(const AuthState()) {
     on<AuthCheckRequested>(_onAuthCheckRequested);
@@ -25,6 +30,8 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     on<SignInWithAppleRequested>(_onSignInWithApple);
     on<SignOutRequested>(_onSignOut);
     on<PasswordResetRequested>(_onPasswordReset);
+    on<SessionValidationRequested>(_onSessionValidation);
+    on<SessionExpired>(_onSessionExpired);
   }
 
   void _onAuthCheckRequested(
@@ -45,13 +52,29 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       emit(state.copyWith(
         status: AuthStatus.authenticated,
         user: event.user,
+        failure: null,
       ));
+      _startSessionValidationTimer();
     } else {
       emit(state.copyWith(
         status: AuthStatus.unauthenticated,
         user: null,
       ));
+      _stopSessionValidationTimer();
     }
+  }
+
+  void _startSessionValidationTimer() {
+    _sessionValidationTimer?.cancel();
+    _sessionValidationTimer = Timer.periodic(
+      _sessionValidationInterval,
+      (_) => add(const SessionValidationRequested()),
+    );
+  }
+
+  void _stopSessionValidationTimer() {
+    _sessionValidationTimer?.cancel();
+    _sessionValidationTimer = null;
   }
 
   Future<void> _onSignInWithEmail(
@@ -176,9 +199,47 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     );
   }
 
+  Future<void> _onSessionValidation(
+    SessionValidationRequested event,
+    Emitter<AuthState> emit,
+  ) async {
+    // Only validate if currently authenticated
+    if (state.status != AuthStatus.authenticated) return;
+
+    final result = await _authRepository.validateSession();
+
+    result.fold(
+      (failure) {
+        // Session validation failed - likely network issue, don't log out
+        AppLogger.warning('Session validation failed: ${failure.message}');
+      },
+      (isValid) {
+        if (!isValid) {
+          // Session is invalid - trigger session expired
+          add(const SessionExpired(reason: 'Session expired or invalidated'));
+        }
+      },
+    );
+  }
+
+  Future<void> _onSessionExpired(
+    SessionExpired event,
+    Emitter<AuthState> emit,
+  ) async {
+    AppLogger.warning('Session expired: ${event.reason}');
+    _stopSessionValidationTimer();
+    await _authRepository.signOut();
+    emit(state.copyWith(
+      status: AuthStatus.unauthenticated,
+      user: null,
+      failure: SessionFailure.expired(),
+    ));
+  }
+
   @override
   Future<void> close() {
     _authStateSubscription?.cancel();
+    _sessionValidationTimer?.cancel();
     return super.close();
   }
 }

@@ -66,3 +66,18 @@ class StorageFailure extends Failure {
 class ValidationFailure extends Failure {
   const ValidationFailure({required super.message, super.code});
 }
+
+class SessionFailure extends Failure {
+  const SessionFailure({required super.message, super.code});
+
+  factory SessionFailure.expired() => const SessionFailure(
+        message: 'Your session has expired. Please sign in again.',
+        code: 'session-expired',
+      );
+
+  factory SessionFailure.invalidated() => const SessionFailure(
+        message:
+            'Your session was invalidated. You may have logged in on another device.',
+        code: 'session-invalidated',
+      );
+}

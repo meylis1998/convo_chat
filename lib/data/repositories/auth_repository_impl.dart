@@ -233,4 +233,18 @@ class AuthRepositoryImpl implements AuthRepository {
       return Left(ServerFailure(message: e.message));
     }
   }
+
+  @override
+  Future<Either<Failure, bool>> validateSession() async {
+    try {
+      final isValid = await _authService.validateSession();
+      return Right(isValid);
+    } on AuthException catch (e) {
+      return Left(SessionFailure(message: e.message, code: e.code));
+    } catch (e) {
+      return Left(
+        const SessionFailure(message: 'Failed to validate session'),
+      );
+    }
+  }
 }

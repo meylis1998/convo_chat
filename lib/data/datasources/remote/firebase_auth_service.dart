@@ -140,6 +140,32 @@ class FirebaseAuthService {
     }
   }
 
+  /// Validates the current session by forcing a token refresh and reloading user.
+  /// Returns true if session is valid, false if user needs to re-authenticate.
+  Future<bool> validateSession() async {
+    try {
+      final user = _firebaseAuth.currentUser;
+      if (user == null) return false;
+
+      // Force refresh the token to validate session
+      await user.getIdToken(true);
+
+      // Reload user to check if account is still valid
+      await user.reload();
+
+      // Check if user still exists after reload
+      final reloadedUser = _firebaseAuth.currentUser;
+      AppLogger.firebase('Session validation successful');
+      return reloadedUser != null;
+    } on FirebaseAuthException catch (e) {
+      AppLogger.error('Session validation failed: ${e.code}', error: e);
+      return false;
+    } catch (e) {
+      AppLogger.error('Session validation error', error: e);
+      return false;
+    }
+  }
+
   Future<void> sendPasswordResetEmail(String email) async {
     try {
       AppLogger.firebase('Sending password reset email to: $email');

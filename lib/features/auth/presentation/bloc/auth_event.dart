@@ -68,3 +68,16 @@ class PasswordResetRequested extends AuthEvent {
   @override
   List<Object?> get props => [email];
 }
+
+class SessionValidationRequested extends AuthEvent {
+  const SessionValidationRequested();
+}
+
+class SessionExpired extends AuthEvent {
+  final String reason;
+
+  const SessionExpired({this.reason = 'Session expired'});
+
+  @override
+  List<Object?> get props => [reason];
+}

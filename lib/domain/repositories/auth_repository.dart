@@ -32,4 +32,8 @@ abstract class AuthRepository {
     String? photoUrl,
     String? bio,
   });
+
+  /// Validates the current session.
+  /// Returns Right(true) if valid, Right(false) if invalid/expired.
+  Future<Either<Failure, bool>> validateSession();
 }

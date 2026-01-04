@@ -8,6 +8,7 @@ import '../../features/auth/presentation/pages/register_page.dart';
 import '../../features/chat/presentation/pages/chat_page.dart';
 import '../../features/conversations/presentation/pages/conversations_page.dart';
 import '../../features/search/presentation/pages/search_page.dart';
+import '../pages/splash_page.dart';
 
 class AppRouter {
   final AuthBloc authBloc;
@@ -19,22 +20,39 @@ class AppRouter {
     debugLogDiagnostics: true,
     refreshListenable: GoRouterRefreshStream(authBloc.stream),
     redirect: (context, state) {
-      final isAuthenticated = authBloc.state.isAuthenticated;
+      final authStatus = authBloc.state.status;
       final isAuthRoute = state.matchedLocation == '/login' ||
           state.matchedLocation == '/register' ||
           state.matchedLocation == '/forgot-password';
+      final isSplashRoute = state.matchedLocation == '/splash';
 
+      // Show splash screen during initial auth check
+      if (authStatus == AuthStatus.initial) {
+        return isSplashRoute ? null : '/splash';
+      }
+
+      final isAuthenticated = authStatus == AuthStatus.authenticated;
+
+      // Redirect unauthenticated users to login
       if (!isAuthenticated && !isAuthRoute) {
         return '/login';
       }
 
-      if (isAuthenticated && isAuthRoute) {
+      // Redirect authenticated users away from auth/splash pages
+      if (isAuthenticated && (isAuthRoute || isSplashRoute)) {
         return '/';
       }
 
       return null;
     },
     routes: [
+      // Splash route
+      GoRoute(
+        path: '/splash',
+        name: 'splash',
+        builder: (context, state) => const SplashPage(),
+      ),
+
       // Auth routes
       GoRoute(
         path: '/login',
