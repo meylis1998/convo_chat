@@ -8,6 +8,8 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../../core/widgets/conversation_tile.dart';
 import '../../../../core/widgets/loading_indicator.dart';
 import '../../../../core/widgets/user_avatar.dart';
+import '../../../auth/data/datasources/firestore_user_service.dart';
+import '../../../auth/data/models/user_model.dart';
 import '../../../auth/presentation/bloc/auth_bloc.dart';
 import '../bloc/conversations_bloc.dart';
 
@@ -145,6 +147,30 @@ class _ConversationsViewState extends State<_ConversationsView> {
         ),
         itemBuilder: (context, index) {
           final conversation = state.conversations[index];
+
+          // For direct conversations, stream the other user's online status
+          if (conversation.isDirect) {
+            final otherUserId = conversation.getOtherParticipantId(user.uid);
+            if (otherUserId != null) {
+              return StreamBuilder<UserModel?>(
+                stream: getIt<FirestoreUserService>().watchUser(otherUserId),
+                builder: (context, snapshot) {
+                  final otherUser = snapshot.data;
+                  final isOnline = otherUser?.isOnline ?? false;
+                  final lastSeen = otherUser?.lastSeen;
+                  return ConversationTile(
+                    conversation: conversation,
+                    currentUserId: user.uid,
+                    isOtherUserOnline: isOnline,
+                    otherUserLastSeen: lastSeen,
+                    onTap: () => context.go('/chat/${conversation.id}'),
+                    onLongPress: () => _showConversationOptions(context, conversation.id),
+                  );
+                },
+              );
+            }
+          }
+
           return ConversationTile(
             conversation: conversation,
             currentUserId: user.uid,

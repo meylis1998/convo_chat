@@ -76,3 +76,12 @@ class DeleteConversation extends ConversationsEvent {
 class StopWatchingConversations extends ConversationsEvent {
   const StopWatchingConversations();
 }
+
+class ParticipantPresenceUpdated extends ConversationsEvent {
+  final Map<String, UserPresence> presenceMap;
+
+  const ParticipantPresenceUpdated(this.presenceMap);
+
+  @override
+  List<Object?> get props => [presenceMap];
+}

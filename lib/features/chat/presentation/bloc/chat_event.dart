@@ -143,6 +143,10 @@ class MarkMessagesAsRead extends ChatEvent {
   const MarkMessagesAsRead();
 }
 
+class MarkMessagesAsDelivered extends ChatEvent {
+  const MarkMessagesAsDelivered();
+}
+
 class MarkMessageAsRead extends ChatEvent {
   final String messageId;
 

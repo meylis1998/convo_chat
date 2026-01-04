@@ -5,12 +5,15 @@ import 'package:visibility_detector/visibility_detector.dart';
 
 import '../../../../core/di/injection.dart';
 import '../../../../core/extensions/context_extensions.dart';
+import '../../../../core/extensions/datetime_extensions.dart';
 import '../../../../core/entities/entities.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/widgets/loading_indicator.dart';
 import '../../../../core/widgets/message_bubble.dart';
 import '../../../../core/widgets/message_input.dart';
 import '../../../../core/widgets/user_avatar.dart';
+import '../../../auth/data/datasources/firestore_user_service.dart';
+import '../../../auth/data/models/user_model.dart';
 import '../../../auth/presentation/bloc/auth_bloc.dart';
 import '../bloc/chat_bloc.dart';
 
@@ -319,7 +322,6 @@ class _ChatViewState extends State<_ChatView> {
           return Column(
             children: [
               Expanded(child: _buildMessagesList(state)),
-              _buildTypingIndicator(state),
               _buildInput(state),
             ],
           );
@@ -346,34 +348,40 @@ class _ChatViewState extends State<_ChatView> {
           final displayPhoto =
               state.conversation!.getDisplayPhoto(currentUser?.uid ?? '');
 
-          return Row(
-            children: [
-              UserAvatar(
-                name: displayName,
-                imageUrl: displayPhoto,
-                size: 36,
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      displayName,
-                      style: context.textTheme.titleMedium,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    if (state.typingUserNames.isNotEmpty)
-                      Text(
-                        '${state.typingUserNames.first} is typing...',
-                        style: context.textTheme.bodySmall?.copyWith(
-                          color: AppColors.primary,
-                        ),
-                      ),
-                  ],
-                ),
-              ),
-            ],
+          // For direct conversations, stream the other user's presence
+          if (state.conversation!.isDirect) {
+            final otherUserId =
+                state.conversation!.getOtherParticipantId(currentUser?.uid ?? '');
+            if (otherUserId != null) {
+              return StreamBuilder<UserModel?>(
+                stream: getIt<FirestoreUserService>().watchUser(otherUserId),
+                builder: (context, snapshot) {
+                  final otherUser = snapshot.data;
+                  final isOnline = otherUser?.isOnline ?? false;
+                  final lastSeen = otherUser?.lastSeen;
+
+                  return _buildAppBarContent(
+                    displayName: displayName,
+                    displayPhoto: displayPhoto,
+                    isOnline: isOnline,
+                    lastSeen: lastSeen,
+                    showOnlineIndicator: true,
+                    typingUserNames: state.typingUserNames,
+                  );
+                },
+              );
+            }
+          }
+
+          // For group conversations, no online indicator
+          return _buildAppBarContent(
+            displayName: displayName,
+            displayPhoto: displayPhoto,
+            isOnline: false,
+            lastSeen: null,
+            showOnlineIndicator: false,
+            typingUserNames: state.typingUserNames,
+            participantCount: state.conversation!.participantIds.length,
           );
         },
       ),
@@ -386,6 +394,99 @@ class _ChatViewState extends State<_ChatView> {
         ),
       ],
     );
+  }
+
+  Widget _buildAppBarContent({
+    required String displayName,
+    required String? displayPhoto,
+    required bool isOnline,
+    required DateTime? lastSeen,
+    required bool showOnlineIndicator,
+    required List<String> typingUserNames,
+    int? participantCount,
+  }) {
+    return Row(
+      children: [
+        UserAvatar(
+          name: displayName,
+          imageUrl: displayPhoto,
+          size: 36,
+          showOnlineIndicator: showOnlineIndicator,
+          isOnline: isOnline,
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                displayName,
+                style: context.textTheme.titleMedium,
+                overflow: TextOverflow.ellipsis,
+              ),
+              _buildSubtitle(
+                typingUserNames: typingUserNames,
+                isOnline: isOnline,
+                lastSeen: lastSeen,
+                showOnlineIndicator: showOnlineIndicator,
+                participantCount: participantCount,
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildSubtitle({
+    required List<String> typingUserNames,
+    required bool isOnline,
+    required DateTime? lastSeen,
+    required bool showOnlineIndicator,
+    int? participantCount,
+  }) {
+    // Priority 1: Typing indicator
+    if (typingUserNames.isNotEmpty) {
+      return Text(
+        typingUserNames.length == 1
+            ? '${typingUserNames.first} is typing...'
+            : '${typingUserNames.length} people are typing...',
+        style: context.textTheme.bodySmall?.copyWith(
+          color: AppColors.primary,
+        ),
+      );
+    }
+
+    // Priority 2: For direct chats - online status or last seen
+    if (showOnlineIndicator) {
+      if (isOnline) {
+        return Text(
+          'Online',
+          style: context.textTheme.bodySmall?.copyWith(
+            color: AppColors.online,
+          ),
+        );
+      } else if (lastSeen != null) {
+        return Text(
+          lastSeen.lastSeenFormatted,
+          style: context.textTheme.bodySmall?.copyWith(
+            color: AppColors.grey500,
+          ),
+        );
+      }
+    }
+
+    // Priority 3: For group chats - show member count
+    if (participantCount != null) {
+      return Text(
+        '$participantCount members',
+        style: context.textTheme.bodySmall?.copyWith(
+          color: AppColors.grey500,
+        ),
+      );
+    }
+
+    return const SizedBox.shrink();
   }
 
   Widget _buildMessagesList(ChatState state) {
@@ -506,32 +607,6 @@ class _ChatViewState extends State<_ChatView> {
     );
   }
 
-  Widget _buildTypingIndicator(ChatState state) {
-    if (state.typingUserNames.isEmpty) return const SizedBox.shrink();
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      child: Row(
-        children: [
-          SizedBox(
-            width: 40,
-            child: _TypingDots(),
-          ),
-          const SizedBox(width: 8),
-          Text(
-            state.typingUserNames.length == 1
-                ? '${state.typingUserNames.first} is typing...'
-                : '${state.typingUserNames.length} people are typing...',
-            style: context.textTheme.bodySmall?.copyWith(
-              color: AppColors.grey500,
-              fontStyle: FontStyle.italic,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
   Widget _buildInput(ChatState state) {
     return MessageInput(
       controller: _messageController,
@@ -588,59 +663,6 @@ class _ChatViewState extends State<_ChatView> {
       default:
         return '';
     }
-  }
-}
-
-class _TypingDots extends StatefulWidget {
-  @override
-  State<_TypingDots> createState() => _TypingDotsState();
-}
-
-class _TypingDotsState extends State<_TypingDots>
-    with SingleTickerProviderStateMixin {
-  late AnimationController _controller;
-
-  @override
-  void initState() {
-    super.initState();
-    _controller = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 1200),
-    )..repeat();
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return AnimatedBuilder(
-      animation: _controller,
-      builder: (context, child) {
-        return Row(
-          mainAxisSize: MainAxisSize.min,
-          children: List.generate(3, (index) {
-            final delay = index * 0.2;
-            final value = (_controller.value + delay) % 1.0;
-            final opacity = (0.3 + 0.7 * (1 - (value - 0.5).abs() * 2))
-                .clamp(0.3, 1.0);
-
-            return Container(
-              margin: const EdgeInsets.symmetric(horizontal: 2),
-              width: 8,
-              height: 8,
-              decoration: BoxDecoration(
-                color: AppColors.grey400.withValues(alpha: opacity),
-                shape: BoxShape.circle,
-              ),
-            );
-          }),
-        );
-      },
-    );
   }
 }
 

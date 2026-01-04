@@ -10,6 +10,8 @@ class ConversationTile extends StatelessWidget {
   final String currentUserId;
   final VoidCallback? onTap;
   final VoidCallback? onLongPress;
+  final bool isOtherUserOnline;
+  final DateTime? otherUserLastSeen;
 
   const ConversationTile({
     super.key,
@@ -17,6 +19,8 @@ class ConversationTile extends StatelessWidget {
     required this.currentUserId,
     this.onTap,
     this.onLongPress,
+    this.isOtherUserOnline = false,
+    this.otherUserLastSeen,
   });
 
   @override
@@ -34,7 +38,7 @@ class ConversationTile extends StatelessWidget {
         imageUrl: displayPhoto,
         size: 52,
         showOnlineIndicator: conversation.isDirect,
-        isOnline: false,
+        isOnline: isOtherUserOnline,
       ),
       title: Row(
         children: [
@@ -94,7 +98,16 @@ class ConversationTile extends StatelessWidget {
   }
 
   Widget _buildLastMessage(BuildContext context) {
+    // For direct conversations with no messages, show last seen if available
     if (conversation.lastMessage == null) {
+      if (conversation.isDirect && !isOtherUserOnline && otherUserLastSeen != null) {
+        return Text(
+          otherUserLastSeen!.lastSeenFormatted,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: const TextStyle(color: AppColors.grey400),
+        );
+      }
       return const Text(
         'No messages yet',
         maxLines: 1,

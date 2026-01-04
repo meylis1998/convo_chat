@@ -61,4 +61,32 @@ extension DateTimeX on DateTime {
   bool isSameDay(DateTime other) {
     return year == other.year && month == other.month && day == other.day;
   }
+
+  /// Ultra-concise last seen format (no prefix)
+  /// UI can add "Last seen " prefix if needed
+  /// Examples:
+  /// - "just now"
+  /// - "2:30 PM" (today)
+  /// - "yesterday"
+  /// - "Monday"
+  /// - "Jan 5"
+  /// - "Jan 5, 2024"
+  String get lastSeenFormatted {
+    final now = DateTime.now();
+    final difference = now.difference(this);
+
+    if (difference.inMinutes < 1) {
+      return 'just now';
+    } else if (isToday) {
+      return DateFormat.jm().format(this); // "2:30 PM"
+    } else if (isYesterday) {
+      return 'yesterday';
+    } else if (difference.inDays < 7) {
+      return DateFormat.EEEE().format(this); // "Monday"
+    } else if (now.year == year) {
+      return DateFormat.MMMd().format(this); // "Jan 5"
+    } else {
+      return DateFormat.yMMMd().format(this); // "Jan 5, 2024"
+    }
+  }
 }

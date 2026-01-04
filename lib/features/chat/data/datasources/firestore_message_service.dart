@@ -165,7 +165,7 @@ class FirestoreMessageService {
     try {
       await _messagesRef(conversationId).doc(messageId).update({
         'readBy.$userId': FieldValue.serverTimestamp(),
-        'status': 'read',
+        'status': MessageStatus.read.name,
       });
     } on FirebaseException catch (e) {
       AppLogger.error('Failed to mark as read', error: e);
@@ -185,7 +185,7 @@ class FirestoreMessageService {
         final docRef = _messagesRef(conversationId).doc(messageId);
         batch.update(docRef, {
           'readBy.$userId': FieldValue.serverTimestamp(),
-          'status': 'read',
+          'status': MessageStatus.read.name,
         });
       }
       await batch.commit();
@@ -202,9 +202,32 @@ class FirestoreMessageService {
     try {
       await _messagesRef(conversationId).doc(messageId).update({
         'deliveredTo.$userId': FieldValue.serverTimestamp(),
+        'status': MessageStatus.delivered.name,
       });
     } on FirebaseException catch (e) {
       AppLogger.error('Failed to mark as delivered', error: e);
+    }
+  }
+
+  Future<void> markMultipleAsDelivered(
+    String conversationId,
+    List<String> messageIds,
+    String userId,
+  ) async {
+    if (messageIds.isEmpty) return;
+
+    try {
+      final batch = _firestore.batch();
+      for (final messageId in messageIds) {
+        final docRef = _messagesRef(conversationId).doc(messageId);
+        batch.update(docRef, {
+          'deliveredTo.$userId': FieldValue.serverTimestamp(),
+          'status': MessageStatus.delivered.name,
+        });
+      }
+      await batch.commit();
+    } on FirebaseException catch (e) {
+      AppLogger.error('Failed to mark messages as delivered', error: e);
     }
   }
 

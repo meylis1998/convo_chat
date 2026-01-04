@@ -40,6 +40,7 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
     on<ClearReplyTo>(_onClearReplyTo);
     on<UpdateTypingStatus>(_onUpdateTypingStatus);
     on<MarkMessagesAsRead>(_onMarkMessagesAsRead);
+    on<MarkMessagesAsDelivered>(_onMarkMessagesAsDelivered);
     on<MarkMessageAsRead>(_onMarkMessageAsRead);
     on<StopWatchingChat>(_onStopWatchingChat);
   }
@@ -85,6 +86,8 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
       status: ChatStatus.loaded,
       messages: event.messages,
     ));
+    // Mark messages from other users as delivered
+    add(const MarkMessagesAsDelivered());
   }
 
   void _onConversationUpdated(
@@ -362,6 +365,30 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
       await _messageService.markMultipleAsRead(
         state.conversationId!,
         unreadMessageIds,
+        state.currentUser!.uid,
+      );
+    }
+  }
+
+  Future<void> _onMarkMessagesAsDelivered(
+    MarkMessagesAsDelivered event,
+    Emitter<ChatState> emit,
+  ) async {
+    if (state.conversationId == null || state.currentUser == null) return;
+
+    // Find undelivered messages from OTHER users (not current user's messages)
+    final undeliveredIds = state.messages
+        .where((m) =>
+            m.senderId != state.currentUser!.uid &&
+            !m.deliveredTo.containsKey(state.currentUser!.uid) &&
+            m.status == MessageStatus.sent)
+        .map((m) => m.id)
+        .toList();
+
+    if (undeliveredIds.isNotEmpty) {
+      await _messageService.markMultipleAsDelivered(
+        state.conversationId!,
+        undeliveredIds,
         state.currentUser!.uid,
       );
     }

@@ -7,6 +7,7 @@ import 'package:injectable/injectable.dart';
 import '../../data/datasources/firestore_conversation_service.dart';
 import '../../data/models/conversation_model.dart';
 import '../../../../core/entities/entities.dart';
+import '../../../../core/services/presence_service.dart';
 
 part 'conversations_event.dart';
 part 'conversations_state.dart';
@@ -14,13 +15,17 @@ part 'conversations_state.dart';
 @injectable
 class ConversationsBloc extends Bloc<ConversationsEvent, ConversationsState> {
   final FirestoreConversationService _conversationService;
+  final PresenceService _presenceService;
   StreamSubscription<List<ConversationModel>>? _conversationsSubscription;
+  StreamSubscription<Map<String, UserPresence>>? _presenceSubscription;
+  String? _currentUserId;
 
-  ConversationsBloc(this._conversationService)
+  ConversationsBloc(this._conversationService, this._presenceService)
       : super(const ConversationsState()) {
     on<LoadConversations>(_onLoadConversations);
     on<ConversationsUpdated>(_onConversationsUpdated);
     on<ConversationsError>(_onConversationsError);
+    on<ParticipantPresenceUpdated>(_onParticipantPresenceUpdated);
     on<CreateDirectConversation>(_onCreateDirectConversation);
     on<CreateGroupConversation>(_onCreateGroupConversation);
     on<DeleteConversation>(_onDeleteConversation);
@@ -31,6 +36,7 @@ class ConversationsBloc extends Bloc<ConversationsEvent, ConversationsState> {
     LoadConversations event,
     Emitter<ConversationsState> emit,
   ) {
+    _currentUserId = event.userId;
     emit(state.copyWith(status: ConversationsStatus.loading));
 
     _conversationsSubscription?.cancel();
@@ -61,6 +67,45 @@ class ConversationsBloc extends Bloc<ConversationsEvent, ConversationsState> {
       status: ConversationsStatus.loaded,
       conversations: event.conversations,
     ));
+
+    // Start watching presence for direct conversation participants
+    _updatePresenceSubscription(event.conversations);
+  }
+
+  void _updatePresenceSubscription(List<ConversationEntity> conversations) {
+    if (_currentUserId == null) return;
+
+    // Get unique other participant IDs from direct conversations
+    final otherParticipantIds = <String>{};
+    for (final conv in conversations) {
+      if (conv.isDirect) {
+        final otherId = conv.getOtherParticipantId(_currentUserId!);
+        if (otherId != null) {
+          otherParticipantIds.add(otherId);
+        }
+      }
+    }
+
+    if (otherParticipantIds.isEmpty) {
+      _presenceSubscription?.cancel();
+      _presenceSubscription = null;
+      return;
+    }
+
+    // Only resubscribe if the participant list changed
+    _presenceSubscription?.cancel();
+    _presenceSubscription = _presenceService
+        .watchMultipleUsersPresence(otherParticipantIds.toList())
+        .listen(
+          (presenceMap) => add(ParticipantPresenceUpdated(presenceMap)),
+        );
+  }
+
+  void _onParticipantPresenceUpdated(
+    ParticipantPresenceUpdated event,
+    Emitter<ConversationsState> emit,
+  ) {
+    emit(state.copyWith(participantPresence: event.presenceMap));
   }
 
   Future<void> _onCreateDirectConversation(
@@ -173,11 +218,14 @@ class ConversationsBloc extends Bloc<ConversationsEvent, ConversationsState> {
   ) {
     _conversationsSubscription?.cancel();
     _conversationsSubscription = null;
+    _presenceSubscription?.cancel();
+    _presenceSubscription = null;
   }
 
   @override
   Future<void> close() {
     _conversationsSubscription?.cancel();
+    _presenceSubscription?.cancel();
     return super.close();
   }
 }
