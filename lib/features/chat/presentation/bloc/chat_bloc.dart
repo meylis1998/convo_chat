@@ -40,6 +40,7 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
     on<ClearReplyTo>(_onClearReplyTo);
     on<UpdateTypingStatus>(_onUpdateTypingStatus);
     on<MarkMessagesAsRead>(_onMarkMessagesAsRead);
+    on<MarkMessageAsRead>(_onMarkMessageAsRead);
     on<StopWatchingChat>(_onStopWatchingChat);
   }
 
@@ -363,6 +364,29 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
         unreadMessageIds,
         state.currentUser!.uid,
       );
+    }
+  }
+
+  Future<void> _onMarkMessageAsRead(
+    MarkMessageAsRead event,
+    Emitter<ChatState> emit,
+  ) async {
+    if (state.conversationId == null || state.currentUser == null) return;
+
+    try {
+      await _messageService.markAsRead(
+        state.conversationId!,
+        event.messageId,
+        state.currentUser!.uid,
+      );
+
+      // Also reset unread count when reading messages
+      await _conversationService.resetUnreadCount(
+        state.conversationId!,
+        state.currentUser!.uid,
+      );
+    } catch (e) {
+      // Silently fail - non-critical
     }
   }
 

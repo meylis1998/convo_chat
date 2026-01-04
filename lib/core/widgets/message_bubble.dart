@@ -11,6 +11,7 @@ class MessageBubble extends StatelessWidget {
   final bool showAvatar;
   final bool showSenderName;
   final VoidCallback? onTap;
+  final VoidCallback? onDoubleTap;
   final VoidCallback? onLongPress;
   final VoidCallback? onReplyTap;
 
@@ -21,6 +22,7 @@ class MessageBubble extends StatelessWidget {
     this.showAvatar = false,
     this.showSenderName = false,
     this.onTap,
+    this.onDoubleTap,
     this.onLongPress,
     this.onReplyTap,
   });
@@ -54,6 +56,7 @@ class MessageBubble extends StatelessWidget {
           Flexible(
             child: GestureDetector(
               onTap: onTap,
+              onDoubleTap: onDoubleTap,
               onLongPress: onLongPress,
               child: Container(
                 padding: const EdgeInsets.symmetric(

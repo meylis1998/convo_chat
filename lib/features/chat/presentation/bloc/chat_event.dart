@@ -143,6 +143,15 @@ class MarkMessagesAsRead extends ChatEvent {
   const MarkMessagesAsRead();
 }
 
+class MarkMessageAsRead extends ChatEvent {
+  final String messageId;
+
+  const MarkMessageAsRead(this.messageId);
+
+  @override
+  List<Object?> get props => [messageId];
+}
+
 class StopWatchingChat extends ChatEvent {
   const StopWatchingChat();
 }
