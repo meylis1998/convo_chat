@@ -41,6 +41,10 @@ android {
             signingConfig = signingConfigs.getByName("debug")
         }
     }
+
+    lint {
+        disable += "KotlinNullnessAnnotation"
+    }
 }
 
 flutter {

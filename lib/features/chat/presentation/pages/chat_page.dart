@@ -9,13 +9,12 @@ import '../../../../core/di/injection.dart';
 import '../../../../core/extensions/context_extensions.dart';
 import '../../../../core/extensions/datetime_extensions.dart';
 import '../../../../core/entities/entities.dart';
+import '../../../../core/services/presence_service.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/widgets/loading_indicator.dart';
 import '../../../../core/widgets/message_bubble.dart';
 import '../../../../core/widgets/message_input.dart';
 import '../../../../core/widgets/user_avatar.dart';
-import '../../../auth/data/datasources/firestore_user_service.dart';
-import '../../../auth/data/models/user_model.dart';
 import '../../../auth/presentation/bloc/auth_bloc.dart';
 import '../bloc/chat_bloc.dart';
 
@@ -365,12 +364,12 @@ class _ChatViewState extends State<_ChatView> {
             final otherUserId =
                 state.conversation!.getOtherParticipantId(currentUser?.uid ?? '');
             if (otherUserId != null) {
-              return StreamBuilder<UserModel?>(
-                stream: getIt<FirestoreUserService>().watchUser(otherUserId),
+              return StreamBuilder<UserPresence>(
+                stream: getIt<PresenceService>().watchUserPresence(otherUserId),
                 builder: (context, snapshot) {
-                  final otherUser = snapshot.data;
-                  final isOnline = otherUser?.isOnline ?? false;
-                  final lastSeen = otherUser?.lastSeen;
+                  final presence = snapshot.data;
+                  final isOnline = presence?.isOnline ?? false;
+                  final lastSeen = presence?.lastSeen;
 
                   return _buildAppBarContent(
                     displayName: displayName,

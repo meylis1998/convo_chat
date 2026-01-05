@@ -11,6 +11,7 @@
 // ignore_for_file: no_leading_underscores_for_library_prefixes
 import 'package:cloud_firestore/cloud_firestore.dart' as _i974;
 import 'package:firebase_auth/firebase_auth.dart' as _i59;
+import 'package:firebase_database/firebase_database.dart' as _i345;
 import 'package:firebase_storage/firebase_storage.dart' as _i457;
 import 'package:get_it/get_it.dart' as _i174;
 import 'package:image_picker/image_picker.dart' as _i183;
@@ -36,6 +37,7 @@ import '../../features/conversations/presentation/bloc/conversations_bloc.dart'
 import '../../features/search/presentation/bloc/search_bloc.dart' as _i552;
 import '../services/media_service.dart' as _i586;
 import '../services/presence_service.dart' as _i219;
+import '../services/rtdb_presence_service.dart' as _i75;
 import '../services/voice_service.dart' as _i950;
 import 'register_module.dart' as _i291;
 
@@ -51,15 +53,15 @@ extension GetItInjectableX on _i174.GetIt {
     gh.lazySingleton<_i974.FirebaseFirestore>(
       () => registerModule.firebaseFirestore,
     );
+    gh.lazySingleton<_i345.FirebaseDatabase>(
+      () => registerModule.firebaseDatabase,
+    );
     gh.lazySingleton<_i457.FirebaseStorage>(
       () => registerModule.firebaseStorage,
     );
     gh.lazySingleton<_i183.ImagePicker>(() => registerModule.imagePicker);
     gh.lazySingleton<_i1039.AudioRecorder>(() => registerModule.audioRecorder);
     gh.lazySingleton<_i501.AudioPlayer>(() => registerModule.audioPlayer);
-    gh.lazySingleton<_i219.PresenceService>(
-      () => _i219.PresenceService(firestore: gh<_i974.FirebaseFirestore>()),
-    );
     gh.lazySingleton<_i488.FirestoreUserService>(
       () =>
           _i488.FirestoreUserService(firestore: gh<_i974.FirebaseFirestore>()),
@@ -89,12 +91,6 @@ extension GetItInjectableX on _i174.GetIt {
         gh<_i488.FirestoreUserService>(),
       ),
     );
-    gh.factory<_i794.ConversationsBloc>(
-      () => _i794.ConversationsBloc(
-        gh<_i49.FirestoreConversationService>(),
-        gh<_i219.PresenceService>(),
-      ),
-    );
     gh.factory<_i797.AuthBloc>(
       () => _i797.AuthBloc(gh<_i787.AuthRepository>()),
     );
@@ -103,6 +99,9 @@ extension GetItInjectableX on _i174.GetIt {
         gh<_i868.FirestoreMessageService>(),
         gh<_i49.FirestoreConversationService>(),
       ),
+    );
+    gh.lazySingleton<_i75.RtdbPresenceService>(
+      () => _i75.RtdbPresenceService(database: gh<_i345.FirebaseDatabase>()),
     );
     gh.factory<_i552.SearchBloc>(
       () => _i552.SearchBloc(
@@ -115,6 +114,15 @@ extension GetItInjectableX on _i174.GetIt {
       () => _i586.MediaService(
         storage: gh<_i457.FirebaseStorage>(),
         imagePicker: gh<_i183.ImagePicker>(),
+      ),
+    );
+    gh.lazySingleton<_i219.PresenceService>(
+      () => _i219.PresenceService(gh<_i75.RtdbPresenceService>()),
+    );
+    gh.factory<_i794.ConversationsBloc>(
+      () => _i794.ConversationsBloc(
+        gh<_i49.FirestoreConversationService>(),
+        gh<_i219.PresenceService>(),
       ),
     );
     return this;

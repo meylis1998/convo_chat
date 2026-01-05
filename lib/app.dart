@@ -3,7 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import 'core/di/injection.dart';
 import 'core/errors/failures.dart';
-import 'features/auth/data/datasources/firestore_user_service.dart';
+import 'core/services/rtdb_presence_service.dart';
 import 'features/auth/presentation/bloc/auth_bloc.dart';
 import 'core/routes/app_router.dart';
 import 'core/theme/app_colors.dart';
@@ -19,21 +19,21 @@ class ConvoApp extends StatefulWidget {
 class _ConvoAppState extends State<ConvoApp> with WidgetsBindingObserver {
   late final AuthBloc _authBloc;
   late final AppRouter _appRouter;
-  late final FirestoreUserService _userService;
+  late final RtdbPresenceService _presenceService;
   final _scaffoldMessengerKey = GlobalKey<ScaffoldMessengerState>();
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
-    _userService = getIt<FirestoreUserService>();
+    _presenceService = getIt<RtdbPresenceService>();
     _authBloc = getIt<AuthBloc>()..add(const AuthCheckRequested());
     _appRouter = AppRouter(_authBloc);
 
     // Listen to auth state changes to update online status
     _authBloc.stream.listen((state) {
       if (state.isAuthenticated && state.user != null) {
-        _userService.updateOnlineStatus(state.user!.uid, true);
+        _presenceService.goOnline(state.user!.uid);
       }
     });
   }
@@ -52,13 +52,15 @@ class _ConvoAppState extends State<ConvoApp> with WidgetsBindingObserver {
 
     switch (state) {
       case AppLifecycleState.resumed:
-        _userService.updateOnlineStatus(user.uid, true);
+        // Re-register onDisconnect and set online
+        _presenceService.goOnline(user.uid);
         break;
       case AppLifecycleState.paused:
       case AppLifecycleState.inactive:
       case AppLifecycleState.hidden:
       case AppLifecycleState.detached:
-        _userService.updateOnlineStatus(user.uid, false);
+        // Manually go offline (onDisconnect handles force-kill)
+        _presenceService.goOffline(user.uid);
         break;
     }
   }
